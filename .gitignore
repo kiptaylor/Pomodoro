@@ -69,9 +69,13 @@ pomtray.exe
 pom_next.exe
 pom_old.exe
 
-# Distribution packaging (keep the tracked EXE; ignore ad-hoc archives)
-dist/*.zip
+# Distribution / publish outputs (do not commit build artifacts)
+dist/
 artifacts/
+
+# Common publish/output folders when using custom output paths
+publish/
+out/
 
 # Local-only helpers / notes (do not publish)
 scripts/

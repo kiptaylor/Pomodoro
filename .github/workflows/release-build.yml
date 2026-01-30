@@ -1,0 +1,33 @@
+name: Release Build (Windows EXE)
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Build dist/Pomodoro.exe
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File scripts/build-dist.ps1
+
+      - name: Upload dist/Pomodoro.exe to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_unmatched_files: true
+          files: |
+            dist/Pomodoro.exe

@@ -23,13 +23,15 @@ This is a small WinForms app that:
 
 ## Download (recommended)
 
-A prebuilt Windows executable is checked into this repo (tracked) for `v0.1.0`:
+Download the Windows executable from **GitHub Releases**:
 
-`dist/Pomodoro.exe`
+https://github.com/kiptaylor/Pomodoro/releases
 
-Download/clone the repo and run that EXE.
+In the latest Release, download the `Pomodoro.exe` asset.
 
 If you prefer the shorter name used in some examples, you can rename it to `pom.exe`.
+
+Note: build outputs like `dist/` are gitignored and are not committed to the repo.
 
 ## Docs
 
@@ -83,6 +85,8 @@ dotnet publish src/PomodoroCore/PomodoroCore.csproj -c Release -o dist
 Output:
 
 `dist/Pomodoro.exe`
+
+`dist/` is a local output folder only (gitignored).
 
 ## Data / config location
 
