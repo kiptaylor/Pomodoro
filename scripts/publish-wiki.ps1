@@ -42,6 +42,10 @@ $tmp = Join-Path $env:TEMP ("pomodoro_wiki_" + [Guid]::NewGuid().ToString("N"))
 try {
   Write-Host "Cloning wiki repo: $wikiRepo"
   git clone $wikiRepo $tmp | Out-Host
+
+  if ($LASTEXITCODE -ne 0) {
+    throw "git clone failed"
+  }
 } catch {
   Write-Host ""
   Write-Host "Failed to clone the wiki repo."
@@ -69,7 +73,7 @@ try {
     @{ Doc = "$DocsDir/releasing.md";        Wiki = "Releasing.md" }
   )
 
-  $home =
+  $homeContent =
 @"
 # Pomodoro Wiki
 
@@ -86,7 +90,7 @@ try {
 Source docs live in the repo under `docs/`.
 "@
 
-  $sidebar =
+  $sidebarContent =
 @"
 ### Pomodoro
 
@@ -102,8 +106,8 @@ Source docs live in the repo under `docs/`.
 - [Releasing](Releasing)
 "@
 
-  Write-FileUtf8NoBom (Join-Path $tmp "Home.md") $home
-  Write-FileUtf8NoBom (Join-Path $tmp "_Sidebar.md") $sidebar
+  Write-FileUtf8NoBom (Join-Path $tmp "Home.md") $homeContent
+  Write-FileUtf8NoBom (Join-Path $tmp "_Sidebar.md") $sidebarContent
 
   foreach ($p in $pages) {
     Copy-DocToWiki -RepoPath $tmp -DocPath $p.Doc -WikiFileName $p.Wiki
@@ -123,4 +127,3 @@ Source docs live in the repo under `docs/`.
 finally {
   if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
 }
-
