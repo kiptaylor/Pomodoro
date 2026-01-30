@@ -2,14 +2,14 @@
 
 ## Solution layout
 
-- `src/PomodoroTray/` — WinForms app (UI + tray + IPC server)
-- `src/PomodoroCore/` — shared core models + persistence
+- `src/PomodoroCore/` — WinForms app (UI + tray + IPC) + shared core models/persistence
+- `src/PomodoroCore/Tray/` — tray + window UI sources
 
 ## Build
 
 ```powershell
 $env:DOTNET_CLI_HOME = (Resolve-Path .dotnet_cli_home).Path
-dotnet build src/PomodoroTray/PomodoroTray.csproj -c Release
+dotnet build Pomodoro.sln -c Release
 ```
 
 ## Notes

@@ -414,3 +414,4 @@ internal sealed class TrayAppContext : ApplicationContext
         }
     }
 }
+

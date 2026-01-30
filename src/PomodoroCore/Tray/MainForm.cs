@@ -1,4 +1,5 @@
 using PomodoroCore;
+using PomodoroTray.Ui;
 
 namespace PomodoroTray;
 
@@ -39,9 +40,15 @@ internal sealed class MainForm : Form
         MaximizeBox = true;
         MinimizeBox = true;
         KeyPreview = true;
+
+        // Runtime-built forms don't get the designer's AutoScaleDimensions assignment.
+        // Without a 96-DPI baseline, Dpi autoscaling becomes a no-op at 125%+ and text can clip badly.
         AutoScaleMode = AutoScaleMode.Dpi;
-        ClientSize = new Size(440, 380);
-        MinimumSize = new Size(440, 380);
+        AutoScaleDimensions = new SizeF(ThemeTokens.DesignDpi, ThemeTokens.DesignDpi);
+
+        Font = ThemeTokens.BaseFont;
+        ClientSize = ThemeTokens.MainWindowClientSize;
+        MinimumSize = ThemeTokens.MainWindowMinimumSize;
 
         titleLabel = new Label
         {
@@ -49,7 +56,7 @@ internal sealed class MainForm : Form
             TextAlign = ContentAlignment.MiddleCenter,
             Font = new Font(Font.FontFamily, 14, FontStyle.Bold),
             Dock = DockStyle.Top,
-            Height = 44,
+            Height = ThemeTokens.TitleRowHeight,
             Text = "Pomodoro"
         };
 
@@ -58,7 +65,7 @@ internal sealed class MainForm : Form
             AutoSize = false,
             TextAlign = ContentAlignment.MiddleCenter,
             Dock = DockStyle.Top,
-            Height = 28,
+            Height = ThemeTokens.StatusRowHeight,
             Text = "No active session"
         };
 
@@ -68,16 +75,16 @@ internal sealed class MainForm : Form
             TextAlign = ContentAlignment.MiddleCenter,
             Font = new Font(Font.FontFamily, 28, FontStyle.Bold),
             Dock = DockStyle.Top,
-            Height = 72,
+            Height = ThemeTokens.TimerRowHeight,
             Text = "--:--"
         };
 
-        startButton = new Button { Text = "Start", Width = 80 };
-        pauseButton = new Button { Text = "Pause", Width = 80 };
-        resumeButton = new Button { Text = "Resume", Width = 80 };
-        stopButton = new Button { Text = "Stop", Width = 80 };
-        saveConfigButton = new Button { Text = "Save", Width = 80 };
-        forceStartCheckBox = new CheckBox { Text = "Force", AutoSize = true };
+        startButton = new Button { Text = "Start" };
+        pauseButton = new Button { Text = "Pause" };
+        resumeButton = new Button { Text = "Resume" };
+        stopButton = new Button { Text = "Stop" };
+        saveConfigButton = new Button { Text = "Save" };
+        forceStartCheckBox = new CheckBox { Text = "Force" };
 
         workMinutesInput = NewMinutesInput(max: 180);
         breakMinutesInput = NewMinutesInput(max: 60);
@@ -100,27 +107,17 @@ internal sealed class MainForm : Form
         saveConfigButton.Click += (_, _) => SaveConfigFromInputs();
 
         var settingsBox = BuildSettingsBox();
+        var buttons = BuildActionButtonsBar();
 
-        var buttons = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Bottom,
-            Height = 66,
-            FlowDirection = FlowDirection.LeftToRight,
-            Padding = new Padding(10, 12, 10, 10),
-            WrapContents = false
-        };
-        buttons.Controls.Add(startButton);
-        buttons.Controls.Add(forceStartCheckBox);
-        buttons.Controls.Add(saveConfigButton);
-        buttons.Controls.Add(pauseButton);
-        buttons.Controls.Add(resumeButton);
-        buttons.Controls.Add(stopButton);
-
-        Controls.Add(buttons);
+        // Docking order matters; keep the bottom action row visible and let settings take the remaining space.
         Controls.Add(settingsBox);
         Controls.Add(timeLabel);
         Controls.Add(statusLabel);
         Controls.Add(titleLabel);
+        Controls.Add(buttons);
+
+        // Apply centralized styling recursively ("CSS for WinForms").
+        this.ApplyTheme();
 
         LoadConfigIntoInputs();
 
@@ -211,29 +208,38 @@ internal sealed class MainForm : Form
     {
         var box = new GroupBox
         {
-            Dock = DockStyle.Top,
-            Height = 155,
+            Dock = DockStyle.Fill,
             Padding = new Padding(10),
             Text = "Settings (next start)"
         };
 
-        var grid = new TableLayoutPanel
+        // Make settings scroll instead of pushing the bottom action row off-screen.
+        var scroll = new Panel
         {
             Dock = DockStyle.Fill,
-            ColumnCount = 4,
-            RowCount = 4,
-            AutoSize = false
+            AutoScroll = true,
+            Margin = new Padding(0)
         };
 
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 60));
+        var grid = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            ColumnCount = 4,
+            RowCount = 4,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Margin = new Padding(0)
+        };
+
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
-        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
-        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
-        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
+        grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         grid.Controls.Add(MakeLabel("Work"), 0, 0);
         grid.Controls.Add(workMinutesInput, 1, 0);
@@ -247,13 +253,16 @@ internal sealed class MainForm : Form
 
         grid.Controls.Add(autoAdvanceCheckBox, 0, 2);
         grid.SetColumnSpan(autoAdvanceCheckBox, 4);
+        autoAdvanceCheckBox.Margin = new Padding(0, 6, 0, 0);
 
         var flagsRow = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
             FlowDirection = FlowDirection.LeftToRight,
-            WrapContents = false,
-            Margin = new Padding(0)
+            WrapContents = true,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Margin = new Padding(0, 6, 0, 0)
         };
         flagsRow.Controls.Add(popupCheckBox);
         flagsRow.Controls.Add(soundCheckBox);
@@ -261,8 +270,31 @@ internal sealed class MainForm : Form
         grid.Controls.Add(flagsRow, 0, 3);
         grid.SetColumnSpan(flagsRow, 4);
 
-        box.Controls.Add(grid);
+        scroll.Controls.Add(grid);
+        box.Controls.Add(scroll);
         return box;
+    }
+
+    private FlowLayoutPanel BuildActionButtonsBar()
+    {
+        var buttons = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Bottom,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            FlowDirection = FlowDirection.LeftToRight,
+            Padding = Padding.Empty,
+            WrapContents = true,
+            Margin = new Padding(0)
+        };
+
+        buttons.Controls.Add(startButton);
+        buttons.Controls.Add(forceStartCheckBox);
+        buttons.Controls.Add(saveConfigButton);
+        buttons.Controls.Add(pauseButton);
+        buttons.Controls.Add(resumeButton);
+        buttons.Controls.Add(stopButton);
+        return buttons;
     }
 
     private static Label MakeLabel(string text)
@@ -329,3 +361,4 @@ internal sealed class MainForm : Form
     private static int ClampToRange(int value, int min, int max)
         => Math.Min(max, Math.Max(min, value));
 }
+

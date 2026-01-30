@@ -4,8 +4,6 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PomodoroCore", "src\PomodoroCore\PomodoroCore.csproj", "{DDA0A4CC-B29F-47AF-A871-CB9F9124E7CF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PomodoroTray", "src\PomodoroTray\PomodoroTray.csproj", "{90556753-D9B0-41BB-B349-97E9B380A778}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -16,10 +14,6 @@ Global
 		{DDA0A4CC-B29F-47AF-A871-CB9F9124E7CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DDA0A4CC-B29F-47AF-A871-CB9F9124E7CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DDA0A4CC-B29F-47AF-A871-CB9F9124E7CF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{90556753-D9B0-41BB-B349-97E9B380A778}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{90556753-D9B0-41BB-B349-97E9B380A778}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{90556753-D9B0-41BB-B349-97E9B380A778}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{90556753-D9B0-41BB-B349-97E9B380A778}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
