@@ -25,6 +25,10 @@ This is a small WinForms app that:
 
 Grab the latest release from GitHub Releases and run `pom.exe`.
 
+## Docs
+
+See `docs/README.md` for a wiki-style set of pages (install/usage/config/troubleshooting/dev/release).
+
 ## Usage
 
 ### UI
