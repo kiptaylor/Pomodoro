@@ -88,6 +88,17 @@ internal static class Program
 
     private static int RunApp(bool startHidden)
     {
+        // Ensure per-monitor DPI awareness so WinForms can scale layout correctly at common Windows scaling levels.
+        // (This is also configured via the project file, but calling it here makes the intent explicit.)
+        try
+        {
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+        }
+        catch
+        {
+            // ignore (defensive; should be available on supported runtimes)
+        }
+
         ApplicationConfiguration.Initialize();
         Application.Run(new TrayAppContext(startHidden));
         return 0;
@@ -226,3 +237,4 @@ internal static class Program
           --force
         """;
 }
+

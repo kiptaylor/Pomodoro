@@ -64,19 +64,19 @@ Prereqs: Windows + .NET SDK (tested with .NET 9).
 
 ```powershell
 $env:DOTNET_CLI_HOME = (Resolve-Path .dotnet_cli_home).Path
-dotnet build src/PomodoroTray/PomodoroTray.csproj -c Release
+dotnet build Pomodoro.sln -c Release
 ```
 
 ## Publish (single EXE)
 
 ```powershell
 $env:DOTNET_CLI_HOME = (Resolve-Path .dotnet_cli_home).Path
-dotnet publish src/PomodoroTray/PomodoroTray.csproj -c Release -r win-x64 /p:PublishSingleFile=true /p:SelfContained=true
+dotnet publish src/PomodoroCore/PomodoroCore.csproj -c Release -o dist
 ```
 
 Output:
 
-`src/PomodoroTray/bin/Release/net9.0-windows/win-x64/publish/pom.exe`
+`dist/Pomodoro.exe`
 
 ## Data / config location
 

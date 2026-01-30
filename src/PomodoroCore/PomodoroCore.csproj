@@ -1,9 +1,38 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+
+    <!-- Keep tray app identity/behavior when unified into this project -->
+    <AssemblyName>Pomodoro</AssemblyName>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+
+    <!-- Publish defaults: single self-contained win-x64 exe to repo-level dist/ -->
+    <PublishDir>..\..\dist\</PublishDir>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <!-- Release publish must not emit symbols/sidecars like .pdb -->
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <!-- Safety net: if publish still produces sidecar files, remove everything except Pomodoro.exe -->
+  <Target Name="CleanupPublishDir" AfterTargets="Publish" Condition="'$(Configuration)'=='Release'">
+    <ItemGroup>
+      <_PublishFilesToDelete Include="$(PublishDir)**\*" Exclude="$(PublishDir)Pomodoro.exe" />
+      <_PublishDirsToDelete Include="$(PublishDir)**\\" Exclude="$(PublishDir)" />
+    </ItemGroup>
+
+    <Delete Files="@(_PublishFilesToDelete)" TreatErrorsAsWarnings="false" />
+    <RemoveDir Directories="@(_PublishDirsToDelete)" />
+  </Target>
 
 </Project>

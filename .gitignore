@@ -44,7 +44,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-dist/
 build/
 .next/
 .nuxt/
@@ -66,7 +65,12 @@ pom.exe
 pomtray.exe
 pom_next.exe
 pom_old.exe
-dist/
+artifacts/
+
+# Local-only helpers / notes (do not publish)
+scripts/
+agenda.md
+agents.md
 
 # Java
 target/

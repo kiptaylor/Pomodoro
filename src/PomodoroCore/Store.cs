@@ -17,6 +17,7 @@ public sealed class Store
     public string ConfigPath => Path.Combine(DataDir, "config.json");
     public string StatePath => Path.Combine(DataDir, "state.json");
     public string LogPath => Path.Combine(DataDir, "log.jsonl");
+    public string TaskIntentPath => Path.Combine(DataDir, "task-intent.json");
 
     public static readonly JsonSerializerOptions JsonIndented = new()
     {
@@ -49,6 +50,21 @@ public sealed class Store
     }
 
     public void SaveState(PomodoroState state) => WriteJson(StatePath, state, JsonIndented);
+
+    public TaskIntentState LoadTaskIntentState()
+    {
+        if (!File.Exists(TaskIntentPath)) return new TaskIntentState();
+
+        var loaded = ReadJson<TaskIntentState>(TaskIntentPath) ?? new TaskIntentState();
+        loaded.Normalize();
+        return loaded;
+    }
+
+    public void SaveTaskIntentState(TaskIntentState state)
+    {
+        state.Normalize();
+        WriteJson(TaskIntentPath, state, JsonIndented);
+    }
 
     public void DeleteState()
     {
