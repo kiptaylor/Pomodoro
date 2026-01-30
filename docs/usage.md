@@ -2,7 +2,7 @@
 
 ## Quick start
 
-- Double-click `pom.exe` to open the window.
+- Double-click `Pomodoro.exe` to open the window.
 - Set your times (Work/Break/Long/Cycles).
 - Click **Save** to persist your defaults.
 - Click **Start** to begin.

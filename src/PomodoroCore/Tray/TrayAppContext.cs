@@ -9,6 +9,7 @@ namespace PomodoroTray;
 internal sealed class TrayAppContext : ApplicationContext
 {
     private readonly Store store;
+    private readonly TaskIntentState intentState;
     private readonly NotifyIcon trayIcon;
     private readonly System.Windows.Forms.Timer timer;
     private readonly SynchronizationContext ui;
@@ -17,10 +18,24 @@ internal sealed class TrayAppContext : ApplicationContext
     private readonly MainForm mainForm;
     private bool lastBalloonWasTrayHint;
 
+    internal event Action? IntentChanged;
+
+    // Tray context menu items (dynamic "remote control")
+    private readonly ToolStripMenuItem headerMenuItem = new() { Enabled = false };
+    private readonly ToolStripMenuItem primaryActionMenuItem = new();
+    private readonly ToolStripMenuItem skipMenuItem = new();
+    private readonly ToolStripMenuItem resetMenuItem = new();
+
+    private readonly ToolStripMenuItem setTaskMenuItem = new() { Text = "Set task" };
+    private readonly ToolStripMenuItem openMenuItem = new();
+    private readonly ToolStripMenuItem settingsMenuItem = new();
+    private readonly ToolStripMenuItem quitMenuItem = new();
+
     public TrayAppContext(bool startHidden)
     {
         ui = SynchronizationContext.Current ?? new SynchronizationContext();
         store = new Store();
+        intentState = store.LoadTaskIntentState();
 
         mainForm = new MainForm(this, store)
         {
@@ -79,19 +94,94 @@ internal sealed class TrayAppContext : ApplicationContext
     {
         var menu = new ContextMenuStrip();
 
-        menu.Items.Add("Open", null, (_, _) => ShowMainWindow());
+        menu.Items.Add(headerMenuItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Start", null, (_, _) => Start(force: false));
-        menu.Items.Add("Start (Force)", null, (_, _) => Start(force: true));
+
+        // Remote-control actions
+        primaryActionMenuItem.Click += (_, _) => PerformPrimaryAction();
+        skipMenuItem.Text = "Skip";
+        skipMenuItem.Click += (_, _) => Skip();
+        resetMenuItem.Text = "Reset";
+        resetMenuItem.Click += (_, _) => Stop();
+
+        // Window actions
+        openMenuItem.Text = "Open/Show Window";
+        openMenuItem.Click += (_, _) => ShowMainWindow();
+        settingsMenuItem.Text = "Settings";
+        settingsMenuItem.Click += (_, _) => ShowSettings();
+
+        // App actions
+        quitMenuItem.Text = "Quit";
+        quitMenuItem.Click += (_, _) => Exit();
+
+        menu.Items.Add(primaryActionMenuItem);
+        menu.Items.Add(skipMenuItem);
+        menu.Items.Add(resetMenuItem);
+
+        menu.Items.Add(setTaskMenuItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Pause", null, (_, _) => Pause());
-        menu.Items.Add("Resume", null, (_, _) => Resume());
-        menu.Items.Add("Stop", null, (_, _) => Stop());
+        menu.Items.Add(openMenuItem);
+        menu.Items.Add(settingsMenuItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Status", null, (_, _) => ShowStatusBalloon());
-        menu.Items.Add("Exit", null, (_, _) => Exit());
+        menu.Items.Add(quitMenuItem);
+
+        // Ensure state is correct at the moment the user opens the menu.
+        menu.Opening += (_, _) => RefreshTrayMenu();
+
+        RefreshTrayMenu();
 
         return menu;
+    }
+
+    private void RefreshTrayMenu(PomodoroState? state = null)
+    {
+        state ??= store.TryLoadState();
+
+        // Header: state + remaining + intent (truncate for safety).
+        headerMenuItem.Text = BuildTrayHeaderText(state, DateTimeOffset.UtcNow);
+
+        BuildSetTaskSubMenu();
+
+        if (state is null)
+        {
+            primaryActionMenuItem.Text = "Start";
+            primaryActionMenuItem.Enabled = true;
+
+            skipMenuItem.Enabled = false;
+            resetMenuItem.Enabled = false;
+            return;
+        }
+
+        primaryActionMenuItem.Text = state.IsPaused ? "Resume" : "Pause";
+        primaryActionMenuItem.Enabled = true;
+
+        // Skip/Reset are meaningful whenever a session exists.
+        skipMenuItem.Enabled = true;
+        resetMenuItem.Enabled = true;
+    }
+
+    private void PerformPrimaryAction()
+    {
+        var state = store.TryLoadState();
+        if (state is null)
+        {
+            Start(force: false);
+            return;
+        }
+
+        if (state.IsPaused)
+        {
+            Resume();
+            return;
+        }
+
+        Pause();
+    }
+
+    private void ShowSettings()
+    {
+        ShowMainWindow();
+        mainForm.FocusSettings();
     }
 
     internal void Exit()
@@ -124,31 +214,35 @@ internal sealed class TrayAppContext : ApplicationContext
         var state = store.TryLoadState();
         if (state is null)
         {
-            trayIcon.Text = "Pomodoro (no active session)";
+            trayIcon.Text = TruncateTooltip(BuildTrayHeaderText(null, DateTimeOffset.UtcNow));
+            RefreshTrayMenu(null);
             return;
         }
 
         var now = DateTimeOffset.UtcNow;
         var remaining = state.GetRemainingSeconds(now);
-        trayIcon.Text = TruncateTooltip($"{state.Phase} {state.CycleIndex}/{state.Cycles} - {FormatDuration(TimeSpan.FromSeconds(Math.Max(0, remaining)))}");
+        trayIcon.Text = TruncateTooltip(BuildTrayHeaderText(state, now));
+
+        RefreshTrayMenu(state);
 
         if (state.IsPaused) return;
         if (remaining > 0) return;
 
-        HandlePhaseEnd(state, now);
+        HandlePhaseEnd(state, nowUtc: now, forceAdvance: false);
     }
 
-    private void HandlePhaseEnd(PomodoroState state, DateTimeOffset nowUtc)
+    private void HandlePhaseEnd(PomodoroState state, DateTimeOffset nowUtc, bool forceAdvance)
     {
         store.AppendLog(new LogEvent("phase_ended", nowUtc, state));
 
         if (state.Sound) SystemSounds.Exclamation.Play();
         if (state.Popup) ShowBalloon("Pomodoro", $"{state.Phase} complete.");
 
-        if (!state.AutoAdvance)
+        if (!forceAdvance && !state.AutoAdvance)
         {
             var paused = state.Pause(nowUtc);
             store.SaveState(paused);
+            RefreshTrayMenu(paused);
             return;
         }
 
@@ -158,6 +252,7 @@ internal sealed class TrayAppContext : ApplicationContext
             store.AppendLog(new LogEvent("session_completed", nowUtc, state));
             store.DeleteState();
             ShowBalloon("Pomodoro", "Session complete.");
+            RefreshTrayMenu(null);
             return;
         }
 
@@ -165,6 +260,33 @@ internal sealed class TrayAppContext : ApplicationContext
         store.SaveState(next);
         store.AppendLog(new LogEvent("phase_started", nowUtc, next));
         ShowBalloon("Pomodoro", $"Now: {next.Phase} ({next.CycleIndex}/{next.Cycles})");
+        RefreshTrayMenu(next);
+    }
+
+    internal void Skip()
+    {
+        var state = store.TryLoadState();
+        if (state is null)
+        {
+            ShowBalloon("Pomodoro", "No active session.");
+            RefreshTrayMenu(null);
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+
+        // Force the current phase to be considered "ended" at now, even if paused.
+        // We then route through the same phase-end logic (with forceAdvance) to keep behavior consistent.
+        var forcedEnd = state with
+        {
+            IsPaused = false,
+            PausedAtUtc = null,
+            PausedRemainingSeconds = null,
+            PhaseStartedAtUtc = now,
+            PhaseDurationSeconds = 0
+        };
+
+        HandlePhaseEnd(forcedEnd, nowUtc: now, forceAdvance: true);
     }
 
     internal void Start(bool force, Dictionary<string, string?>? overrides = null)
@@ -186,6 +308,8 @@ internal sealed class TrayAppContext : ApplicationContext
 
         var workMinutes = options.WorkSeconds / 60;
         ShowBalloon("Pomodoro", $"Started: {state.Phase} ({workMinutes} min)");
+
+        RefreshTrayMenu(state);
     }
 
     internal void Pause()
@@ -199,6 +323,8 @@ internal sealed class TrayAppContext : ApplicationContext
         store.SaveState(paused);
         store.AppendLog(new LogEvent("paused", now, paused));
         ShowBalloon("Pomodoro", "Paused.");
+
+        RefreshTrayMenu(paused);
     }
 
     internal void Resume()
@@ -212,6 +338,8 @@ internal sealed class TrayAppContext : ApplicationContext
         store.SaveState(resumed);
         store.AppendLog(new LogEvent("resumed", now, resumed));
         ShowBalloon("Pomodoro", "Resumed.");
+
+        RefreshTrayMenu(resumed);
     }
 
     internal void Stop()
@@ -223,6 +351,8 @@ internal sealed class TrayAppContext : ApplicationContext
         store.AppendLog(new LogEvent("stopped", now, state));
         store.DeleteState();
         ShowBalloon("Pomodoro", "Stopped.");
+
+        RefreshTrayMenu(null);
     }
 
     private void ShowStatusBalloon()
@@ -310,6 +440,106 @@ internal sealed class TrayAppContext : ApplicationContext
     {
         const int max = 63;
         return text.Length <= max ? text : text[..(max - 1)];
+    }
+
+    private string BuildTrayHeaderText(PomodoroState? state, DateTimeOffset nowUtc)
+    {
+        var intent = intentState.CurrentIntent;
+        var intentPart = intent is null ? string.Empty : $" • {TaskIntentState.TruncateForUi(intent, 32)}";
+
+        if (state is null)
+        {
+            return $"No active session{intentPart}";
+        }
+
+        var remaining = Math.Max(0, state.GetRemainingSeconds(nowUtc));
+        var pausedPart = state.IsPaused ? " (paused)" : string.Empty;
+        return $"{state.Phase} {state.CycleIndex}/{state.Cycles} - {FormatDuration(TimeSpan.FromSeconds(remaining))}{pausedPart}{intentPart}";
+    }
+
+    private void BuildSetTaskSubMenu()
+    {
+        setTaskMenuItem.DropDownItems.Clear();
+
+        var current = intentState.CurrentIntent;
+        if (current is not null)
+        {
+            var clear = new ToolStripMenuItem("Clear task")
+            {
+                ToolTipText = "Clear the current intent"
+            };
+            clear.Click += (_, _) => SetCurrentIntent(null, addToRecents: false);
+            setTaskMenuItem.DropDownItems.Add(clear);
+            setTaskMenuItem.DropDownItems.Add(new ToolStripSeparator());
+        }
+
+        if (intentState.Pinned.Count > 0)
+        {
+            setTaskMenuItem.DropDownItems.Add(new ToolStripMenuItem("Pinned") { Enabled = false });
+            foreach (var item in intentState.Pinned)
+            {
+                var mi = new ToolStripMenuItem(TaskIntentState.TruncateForUi(item, 48))
+                {
+                    Checked = string.Equals(current, item, StringComparison.OrdinalIgnoreCase),
+                    ToolTipText = item
+                };
+                mi.Click += (_, _) => SetCurrentIntent(item, addToRecents: true);
+                setTaskMenuItem.DropDownItems.Add(mi);
+            }
+        }
+
+        if (intentState.Recents.Count > 0)
+        {
+            if (setTaskMenuItem.DropDownItems.Count > 0) setTaskMenuItem.DropDownItems.Add(new ToolStripSeparator());
+            setTaskMenuItem.DropDownItems.Add(new ToolStripMenuItem("Recent") { Enabled = false });
+            foreach (var item in intentState.Recents)
+            {
+                var mi = new ToolStripMenuItem(TaskIntentState.TruncateForUi(item, 48))
+                {
+                    Checked = string.Equals(current, item, StringComparison.OrdinalIgnoreCase),
+                    ToolTipText = item
+                };
+                mi.Click += (_, _) => SetCurrentIntent(item, addToRecents: true);
+                setTaskMenuItem.DropDownItems.Add(mi);
+            }
+        }
+
+        // If nothing to show, keep submenu disabled to reduce noise.
+        setTaskMenuItem.Enabled = intentState.Pinned.Count > 0 || intentState.Recents.Count > 0 || intentState.CurrentIntent is not null;
+    }
+
+    internal string? GetCurrentIntent() => intentState.CurrentIntent;
+
+    internal IReadOnlyList<string> GetPinnedIntents() => intentState.Pinned;
+
+    internal IReadOnlyList<string> GetRecentIntents() => intentState.Recents;
+
+    internal void SetCurrentIntent(string? raw, bool addToRecents)
+    {
+        var changed = intentState.SetCurrentIntent(raw, addToRecents);
+        store.SaveTaskIntentState(intentState);
+        if (changed) IntentChanged?.Invoke();
+        RefreshTrayMenu();
+    }
+
+    internal void PinCurrentIntent()
+    {
+        if (intentState.Pin(intentState.CurrentIntent))
+        {
+            store.SaveTaskIntentState(intentState);
+            IntentChanged?.Invoke();
+            RefreshTrayMenu();
+        }
+    }
+
+    internal void UnpinIntent(string? raw)
+    {
+        if (intentState.Unpin(raw))
+        {
+            store.SaveTaskIntentState(intentState);
+            IntentChanged?.Invoke();
+            RefreshTrayMenu();
+        }
     }
 
     private async Task RunIpcServerAsync(CancellationToken token)
@@ -414,3 +644,4 @@ internal sealed class TrayAppContext : ApplicationContext
         }
     }
 }
+

@@ -33,6 +33,9 @@ $RECYCLE.BIN/
 # Local tooling caches
 .dotnet_cli_home/
 
+# Local clones
+wiki/
+
 # Secrets / local env
 .env
 .env.*
@@ -44,7 +47,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-dist/
 build/
 .next/
 .nuxt/
@@ -66,7 +68,19 @@ pom.exe
 pomtray.exe
 pom_next.exe
 pom_old.exe
+
+# Distribution / publish outputs (do not commit build artifacts)
 dist/
+artifacts/
+
+# Common publish/output folders when using custom output paths
+publish/
+out/
+
+# Local-only helpers / notes (do not publish)
+scripts/
+agenda.md
+agents.md
 
 # Java
 target/
