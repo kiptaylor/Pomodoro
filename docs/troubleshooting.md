@@ -10,7 +10,7 @@
 - Check Windows notification settings for the app.
 - Focus Assist / Do Not Disturb can suppress notifications.
 
-## “I can’t overwrite pom.exe”
+## “I can’t overwrite Pomodoro.exe”
 
 If you’re updating the EXE while it’s running:
 - Exit the app from the tray menu (or close → choose Exit)

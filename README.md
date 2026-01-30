@@ -23,7 +23,13 @@ This is a small WinForms app that:
 
 ## Download (recommended)
 
-Grab the latest release from GitHub Releases and run `pom.exe`.
+A prebuilt Windows executable is checked into this repo (tracked) for `v0.1.0`:
+
+`dist/Pomodoro.exe`
+
+Download/clone the repo and run that EXE.
+
+If you prefer the shorter name used in some examples, you can rename it to `pom.exe`.
 
 ## Docs
 
@@ -33,7 +39,7 @@ See `docs/README.md` for a wiki-style set of pages (install/usage/config/trouble
 
 ### UI
 
-- Double-click `pom.exe` to open the window.
+- Double-click `Pomodoro.exe` to open the window.
 - Close button or `Esc` prompts:
   - **Yes** → go to tray
   - **No** → exit

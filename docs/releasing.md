@@ -13,10 +13,8 @@ dotnet publish src/PomodoroCore/PomodoroCore.csproj -c Release -o dist
 3) Zip the EXE:
 
 ```powershell
-New-Item -ItemType Directory -Force dist | Out-Null
-Copy-Item -Force dist\Pomodoro.exe dist\pom.exe
-Compress-Archive -Force -Path dist\pom.exe -DestinationPath dist\pom-win-x64.zip
+Compress-Archive -Force -Path dist\Pomodoro.exe -DestinationPath dist\pomodoro-win-x64.zip
 ```
 
-4) Create a GitHub Release and upload `pom-win-x64.zip`.
+4) Create a GitHub Release and upload `pomodoro-win-x64.zip`.
 

@@ -1,10 +1,11 @@
 # Installation
 
-## Option A: Download the EXE (recommended)
+## Option A: Run the prebuilt EXE from this repo (v0.1.0)
 
-1) Go to GitHub Releases for this repo.
-2) Download the latest `pom-win-x64.zip`.
-3) Extract it and run `pom.exe`.
+1) Download/clone this repo.
+2) Run `dist/Pomodoro.exe`.
+
+Optional: rename `Pomodoro.exe` → `pom.exe` if you want a shorter command name.
 
 ## Option B: Build from source
 
@@ -23,7 +24,7 @@ Publish a single EXE:
 
 ```powershell
 $env:DOTNET_CLI_HOME = (Resolve-Path .dotnet_cli_home).Path
-dotnet publish src/PomodoroCore/PomodoroCore.csproj -c Release
+dotnet publish src/PomodoroCore/PomodoroCore.csproj -c Release -o dist
 ```
 
 Output:
