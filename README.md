@@ -5,7 +5,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/kiptaylor/Pomodoro/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/kiptaylor/Pomodoro/ci.yml?branch=main&style=for-the-badge" alt="CI status"></a>
   <a href="https://github.com/kiptaylor/Pomodoro/releases"><img src="https://img.shields.io/github/v/release/kiptaylor/Pomodoro?style=for-the-badge" alt="GitHub release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-All%20Rights%20Reserved-red?style=for-the-badge" alt="License"></a>
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge" alt="Platform: Windows">
